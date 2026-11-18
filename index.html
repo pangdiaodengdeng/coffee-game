@@ -249,7 +249,7 @@
 <script>
 (function(){
   /* 咖啡流程：数字 → 阶格名（3×3 用文字，更大棋盘用数字） */
-  const STAGES = ['咖啡樱桃','咖啡花','生豆','烘焙','熟豆','磨粉','萃取','品尝'];
+  const STAGES = ['咖啡花','咖啡樱桃','生豆','烘焙','熟豆','磨粉','萃取','品尝'];
   const labelOf = v => (n === 3 && STAGES[v-1]) ? STAGES[v-1] : String(v);
 
   const boardEl = document.getElementById('board');
