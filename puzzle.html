@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>咖啡华容道 · 从种子到一杯咖啡</title>
+<style>
+  :root{
+    --bg1:#120e0b;
+    --bg2:#201711;
+    --accent:#f3c07b;
+    --accent2:#d08a4e;
+    --text:#f3ece4;
+    --muted:#a89584;
+    --tile1:#fdf7ef;
+    --tile2:#e8d8c4;
+    --tiletext:#2b1c10;
+    --board:#1a120d;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;
+    min-height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px 16px 32px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(900px 600px at 12% -10%, rgba(208,138,78,.30), transparent 60%),
+      radial-gradient(800px 600px at 100% 110%, rgba(243,192,123,.16), transparent 60%),
+      linear-gradient(160deg, var(--bg1), var(--bg2));
+    background-attachment:fixed;
+  }
+  .wrap{
+    width:100%;
+    max-width:min(460px, max(300px, calc(100vh - 400px)));
+  }
+
+  header{text-align:center;margin-bottom:18px}
+  h1{
+    margin:0 0 6px;
+    font-size:clamp(22px,6vw,28px);
+    letter-spacing:.14em;
+    font-weight:700;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .label3{font-size:.62em !important;letter-spacing:.02em}
+  .sub{margin:0;color:var(--muted);font-size:12.5px;letter-spacing:.18em}
+
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin:0 0 14px;
+  }
+  .stat{
+    background:rgba(255,255,255,.055);
+    border:1px solid rgba(255,255,255,.09);
+    border-radius:14px;
+    padding:9px 6px 8px;
+    text-align:center;
+    backdrop-filter:blur(8px);
+  }
+  .stat .k{display:block;font-size:10.5px;color:var(--muted);letter-spacing:.16em;margin-bottom:3px}
+  .stat .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+  .stat.win .v{color:var(--accent)}
+
+  .boardwrap{
+    position:relative;
+    background:var(--board);
+    border-radius:22px;
+    padding:10px;
+    box-shadow:
+      0 24px 60px -20px rgba(0,0,0,.85),
+      inset 0 1px 0 rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.07);
+  }
+  .boardwrap::after{
+    content:"";
+    position:absolute;inset:0;border-radius:22px;pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 40%);
+  }
+  #board{
+    position:relative;
+    width:100%;
+    aspect-ratio:1/1;
+    touch-action:manipulation;
+  }
+  .tile{
+    position:absolute;
+    top:0;left:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:12px;
+    background:linear-gradient(170deg,var(--tile1),var(--tile2));
+    color:var(--tiletext);
+    font-weight:800;
+    font-variant-numeric:tabular-nums;
+    cursor:pointer;
+    user-select:none;
+    transition:transform .16s cubic-bezier(.34,1.4,.5,1), background .25s, box-shadow .25s;
+    box-shadow:0 2px 0 rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.9);
+    will-change:transform;
+    white-space:nowrap;
+    letter-spacing:-0.02em;
+  }
+  .tile:active{background:linear-gradient(170deg,#fff,#f4e6d3)}
+  .tile.locked{cursor:default}
+  .tile.placed{
+    background:linear-gradient(170deg,#f8e4c2,#e0b183);
+    box-shadow:0 2px 0 rgba(0,0,0,.28), 0 0 0 1px rgba(243,192,123,.65), inset 0 1px 0 rgba(255,255,255,.9);
+  }
+
+  .controls{display:flex;gap:10px;margin-top:14px}
+  .btn{
+    flex:1;
+    border:0;
+    border-radius:14px;
+    padding:13px 10px;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.06em;
+    color:#2a1a0c;
+    background:linear-gradient(135deg,var(--accent),#eaa563);
+    cursor:pointer;
+    transition:transform .12s, filter .2s;
+    box-shadow:0 10px 24px -12px rgba(243,192,123,.85);
+  }
+  .btn.ghost{
+    background:rgba(255,255,255,.07);
+    color:var(--text);
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:none;
+  }
+  .btn:hover{filter:brightness(1.06)}
+  .btn:active{transform:translateY(1px) scale(.99)}
+
+  .levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .lvl{
+    border:1px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.045);
+    color:var(--muted);
+    border-radius:12px;
+    padding:10px 4px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.2s;
+  }
+  .lvl small{display:block;font-size:10px;opacity:.72;margin-top:2px;letter-spacing:.08em}
+  .lvl.active{
+    color:#2a1a0c;
+    background:linear-gradient(135deg,var(--accent),#d99b58);
+    border-color:transparent;
+    box-shadow:0 8px 20px -12px rgba(208,138,78,.9);
+  }
+  .lvl.active small{opacity:.75}
+
+  footer{margin-top:14px;text-align:center;color:var(--muted);font-size:11.5px;line-height:1.7}
+  kbd{
+    background:rgba(255,255,255,.09);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:5px;
+    padding:1px 5px;
+    font-size:10.5px;
+    font-family:inherit;
+  }
+
+  .win{
+    position:fixed;inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(5,9,20,.72);
+    backdrop-filter:blur(6px);
+    z-index:50;
+  }
+  .win.show{display:flex;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .card{
+    width:100%;max-width:320px;
+    text-align:center;
+    padding:26px 22px 22px;
+    border-radius:22px;
+    background:linear-gradient(170deg,#2b1e15,#1b1310);
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 30px 70px -24px #000;
+    animation:pop .35s cubic-bezier(.2,1.5,.4,1);
+  }
+  @keyframes pop{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+  .card h2{margin:0 0 4px;font-size:22px;letter-spacing:.1em;color:var(--accent)}
+  .win .card{background:linear-gradient(170deg,#2b1e15,#1b1310)}
+  .card .big{font-size:34px;font-weight:800;margin:10px 0 2px;font-variant-numeric:tabular-nums}
+  .card .desc{color:var(--muted);font-size:12.5px;margin-bottom:18px}
+  .card .badge{display:inline-block;margin-bottom:14px;padding:4px 12px;border-radius:999px;font-size:11.5px;letter-spacing:.1em;background:rgba(243,192,123,.14);color:var(--accent);border:1px solid rgba(243,192,123,.35)}
+  .card .btn{width:100%}
+  @media (max-width:380px){ .stat .v{font-size:15px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>咖啡华容道</h1>
+    <p class="sub">从种子到一杯咖啡</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><span class="k">步数</span><span class="v" id="moves">0</span></div>
+    <div class="stat"><span class="k">用时</span><span class="v" id="time">00:00</span></div>
+    <div class="stat"><span class="k">最佳</span><span class="v" id="best">—</span></div>
+  </div>
+
+  <div class="boardwrap">
+    <div id="board" aria-label="数字华容道棋盘"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn ghost" id="shuffle">重新洗牌</button>
+    <button class="btn" id="solve">直接看答案</button>
+  </div>
+
+  <div class="levels" id="levels">
+    <button class="lvl active" data-n="3">3 × 3<small>咖啡流程</small></button>
+    <button class="lvl" data-n="4">4 × 4<small>数字版</small></button>
+    <button class="lvl" data-n="5">5 × 5<small>数字版</small></button>
+  </div>
+
+  <footer>
+    点击空位旁的方块滑动 · 键盘 <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 控制方块移动方向<br/>
+    按 咖啡樱桃 → 咖啡花 → 生豆 → 烘焙 → 熟豆 → 磨粉 → 萃取 → 品尝 归位，变卡其色即已就位
+  </footer>
+</div>
+
+<div class="win" id="win">
+  <div class="card">
+    <h2>咖啡做好了！</h2>
+    <div id="winBadge" class="badge" style="display:none">新纪录</div>
+    <div class="big" id="winTime">00:00</div>
+    <div class="desc" id="winDesc">用时 00:00 · 步数 0</div>    <button class="btn" id="again">再来一局</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* 咖啡流程：数字 → 阶格名（3×3 用文字，更大棋盘用数字） */
+  const STAGES = ['咖啡樱桃','咖啡花','生豆','烘焙','熟豆','磨粉','萃取','品尝'];
+  const labelOf = v => (n === 3 && STAGES[v-1]) ? STAGES[v-1] : String(v);
+
+  const boardEl = document.getElementById('board');
+  const movesEl = document.getElementById('moves');
+  const timeEl  = document.getElementById('time');
+  const bestEl  = document.getElementById('best');
+  const winEl   = document.getElementById('win');
+  const winTime = document.getElementById('winTime');
+  const winDesc = document.getElementById('winDesc');
+  const winBadge= document.getElementById('winBadge');
+
+  let n = 3;            // 棋盘边长
+  let order = [];       // order[slotIndex] = 数字(1..n*n-1) 或 0 表示空
+  let empty = n*n-1;    // 空位所在的格子索引
+  let tiles = new Map();// 数字 -> DOM
+  let moves = 0;
+  let startAt = 0;
+  let timer = null;
+  let solved = false;
+  let cell = 60, gap = 8;
+
+  const fmt = ms => {
+    const s = Math.floor(ms/1000);
+    return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+  };
+
+  /* ---------- 记录 ---------- */
+  const bestKey = () => `huarongdao.best.${n}`;
+  function loadBest(){
+    try{
+      const raw = localStorage.getItem(bestKey());
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function saveBest(rec){
+    try{ localStorage.setItem(bestKey(), JSON.stringify(rec)); }catch(e){}
+  }
+  function renderBest(){
+    const b = loadBest();
+    bestEl.textContent = b ? fmt(b.time) : '—';
+    bestEl.title = b ? `最少 ${b.moves} 步` : '';
+  }
+
+  /* ---------- 布局 ---------- */
+  function layout(){
+    const w = boardEl.clientWidth || 320;
+    gap = Math.max(5, Math.round(w * 0.018));
+    cell = (w - gap * (n - 1)) / n;
+    boardEl.style.height = w + 'px';
+    tiles.forEach(t => {
+      t.style.width  = cell + 'px';
+      t.style.height = cell + 'px';
+      t.style.borderRadius = Math.max(8, Math.round(cell * 0.17)) + 'px';
+      const isText = t.dataset.text === '1';
+      const len = t.textContent.length;
+      const k = isText ? 0.21 : (len >= 2 ? 0.32 : 0.4);
+      t.style.fontSize = Math.round(cell * k) + 'px';
+    });
+    paint();
+  }
+  function xy(slot){
+    const r = Math.floor(slot / n), c = slot % n;
+    return [c * (cell + gap), r * (cell + gap)];
+  }
+  function paint(){
+    tiles.forEach((t, v) => {
+      const slot = order.indexOf(v);
+      const [x, y] = xy(slot);
+      t.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      t.classList.toggle('placed', v === slot + 1);
+    });
+  }
+
+  /* ---------- 建盘 ---------- */
+  function build(){
+    boardEl.innerHTML = '';
+    tiles.clear();
+    for (let v = 1; v <= n*n - 1; v++){
+      const d = document.createElement('div');
+      d.className = 'tile';
+      d.textContent = labelOf(v);
+      d.dataset.v = v;
+      d.dataset.text = (labelOf(v) !== String(v)) ? '1' : '0';
+      d.setAttribute('aria-label', `第 ${v} 格：${labelOf(v)}`);
+      d.addEventListener('click', () => onTileClick(v));
+      boardEl.appendChild(d);
+      tiles.set(v, d);
+    }
+  }
+
+  /* ---------- 洗牌：从答案出发随机走合法步，保证可解 ---------- */
+  function shuffle(){
+    order = [];
+    for (let i = 1; i < n*n; i++) order.push(i);
+    order.push(0);
+    empty = n*n - 1;
+    let last = -1;
+    const steps = Math.max(120, n*n*22);
+    for (let s = 0; s < steps; s++){
+      const nb = neighbors(empty).filter(i => i !== last);
+      const pick = nb[Math.floor(Math.random()*nb.length)];
+      order[empty] = order[pick];
+      order[pick] = 0;
+      last = empty;
+      empty = pick;
+    }
+    // 极小概率刚好洗成已完成，再走两步
+    if (isSolved()){ for (let k=0;k<3;k++) randomMove(); }
+  }
+  function neighbors(i){
+    const r = Math.floor(i/n), c = i%n, out = [];
+    if (r > 0) out.push(i-n);
+    if (r < n-1) out.push(i+n);
+    if (c > 0) out.push(i-1);
+    if (c < n-1) out.push(i+1);
+    return out;
+  }
+  function randomMove(){
+    const nb = neighbors(empty);
+    const pick = nb[Math.floor(Math.random()*nb.length)];
+    order[empty] = order[pick];
+    order[pick] = 0;
+    empty = pick;
+  }
+  function isSolved(){
+    for (let i = 0; i < n*n-1; i++) if (order[i] !== i+1) return false;
+    return true;
+  }
+
+  /* ---------- 交互 ---------- */
+  function onTileClick(v){
+    if (solved) return;
+    const slot = order.indexOf(v);
+    if (neighbors(empty).indexOf(slot) === -1) return;
+    doMove(slot);
+  }
+  function doMove(slot){
+    order[empty] = order[slot];
+    order[slot] = 0;
+    empty = slot;
+    moves++;
+    movesEl.textContent = moves;
+    startTimer();
+    paint();
+    if (isSolved()) finish();
+  }
+
+  /* 方向键：方向代表方块移动的方向 */
+  document.addEventListener('keydown', e => {
+    const map = { ArrowUp:'U', ArrowDown:'D', ArrowLeft:'L', ArrowRight:'R' };
+    const d = map[e.key];
+    if (!d || solved) return;
+    e.preventDefault();
+    const r = Math.floor(empty/n), c = empty%n;
+    let src = -1;
+    if (d === 'U' && r < n-1) src = empty + n;       // 下方方块上移
+    if (d === 'D' && r > 0)   src = empty - n;       // 上方方块下移
+    if (d === 'L' && c < n-1) src = empty + 1;       // 右侧方块左移
+    if (d === 'R' && c > 0)   src = empty - 1;       // 左侧方块右移
+    if (src >= 0) doMove(src);
+  });
+
+  /* ---------- 计时 ---------- */
+  function startTimer(){
+    if (timer) return;
+    startAt = Date.now();
+    timer = setInterval(() => {
+      timeEl.textContent = fmt(Date.now() - startAt);
+    }, 200);
+  }
+  function stopTimer(){ clearInterval(timer); timer = null; }
+  function resetTimer(){
+    stopTimer();
+    timeEl.textContent = '00:00';
+  }
+
+  /* ---------- 结束 ---------- */
+  function finish(){
+    solved = true;
+    stopTimer();
+    const used = startAt ? Date.now() - startAt : 0;
+    timeEl.textContent = fmt(used);
+
+    const prev = loadBest();
+    let isNew = false;
+    if (!prev || used < prev.time){
+      saveBest({ time: used, moves });
+      isNew = true;
+    }
+    renderBest();
+
+    winTime.textContent = fmt(used);
+    winDesc.textContent = `步数 ${moves} · ${n}×${n} 难度`;
+    winBadge.style.display = isNew ? 'inline-block' : 'none';
+    setTimeout(() => winEl.classList.add('show'), 380);
+  }
+
+  /* ---------- 开局 ---------- */
+  function newGame(resetSize){
+    if (resetSize) build();
+    solved = false;
+    solveBtn.textContent = '直接看答案';
+    moves = 0;
+    movesEl.textContent = '0';
+    resetTimer();
+    winEl.classList.remove('show');
+    shuffle();
+    layout();
+  }
+
+  const solveBtn = document.getElementById('solve');
+  document.getElementById('shuffle').addEventListener('click', () => newGame(false));
+  solveBtn.addEventListener('click', () => {
+    if (solved) { newGame(false); return; }  // 看完答案后再点 = 重新开局
+    solved = true;
+    stopTimer();
+    order = [];
+    for (let i = 1; i < n*n; i++) order.push(i);
+    order.push(0);
+    empty = n*n-1;
+    paint();
+    tiles.forEach(t => t.classList.remove('placed'));
+    setTimeout(() => tiles.forEach(t => t.classList.add('placed')), 60);
+    movesEl.textContent = moves;
+    solveBtn.textContent = '重新来一局';
+  });
+  document.getElementById('again').addEventListener('click', () => newGame(false));
+
+  document.getElementById('levels').addEventListener('click', e => {
+    const btn = e.target.closest('.lvl');
+    if (!btn) return;
+    n = Number(btn.dataset.n);
+    [...document.querySelectorAll('.lvl')].forEach(b => b.classList.toggle('active', b === btn));
+    renderBest();
+    newGame(true);
+  });
+
+  let rt = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(rt);
+    rt = setTimeout(layout, 80);
+  });
+
+  /* 启动 */
+  build();
+  renderBest();
+  newGame(true);
+})();
+</script>
+</body>
+</html>
